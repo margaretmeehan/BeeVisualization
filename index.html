@@ -1,0 +1,448 @@
+<html>
+    <head>
+        <title>Project Two</title>
+        <link href="https://fonts.googleapis.com/css?family=Alegreya|Alegreya+Sans" rel="stylesheet">
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/styles/default.min.css">
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+
+        <link href="https://fonts.googleapis.com/css?family=Amatic+SC" rel="stylesheet">
+
+        <script src="https://d3js.org/d3.v4.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/highlight.min.js"></script>
+        <link href="https://fonts.googleapis.com/css/?family=Raleway" rel="stylesheet">
+        <link href="main.css" rel="stylesheet">
+
+        <script src="http://d3js.org/topojson.v2.min.js"></script>
+        <script src="parseRecipes.js"></script>
+        <script src="helpers.js"></script>
+
+        <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+
+    </head>
+
+    <body>
+        <img src="images/beehive.svg" width="100px" height="100px" style="float:right">
+        <img class="rotateimgRight" src="images/bee.svg" width="40" height="40" style="float:right; display:inline; margin-right: -15px; margin-top: 50">
+        <img class="rotateimg" src="images/bee.svg" width="40" height="40" style="float:right; display:inline; margin-right: -50px; margin-top: 20">
+
+        <h1 style="text-align:center;">A World With No B<img class="rotateimg" src="images/bee.svg" width="40" height="40" style="display:inline"><img class="rotateimgRight" src="images/bee.svg" width="40" height="40" style="display:inline;margin-top:80px">s</h1>
+
+        <p id="p1" style="text-align:center; margin-top:-50px"></p>
+
+
+        <div class="mapButton">
+            <button type="button" class="btn btn-secondary" onclick="changeMap()">Map Total Colonies Lost</button>
+        </div>
+
+        <div id="main"></div>
+
+        <img src="images/arrow.svg" id="up-arrow" onclick="toTop()"/>
+
+        <script>
+
+            function createDivs(dataArray){
+                for(var x = 0; x < dataArray.length; x++){
+                    var div = document.createElement('div');
+                    div.setAttribute("id", dataArray[x].State);
+                    main.appendChild(div);
+                }
+        	  }
+
+            var temp=[]
+            function processData(oldData, newData){
+                for(var x = 0; x < oldData.length; x++){
+                    var FIPS = oldData[x].FIPS;
+                    var stateName = oldData[x].State;
+                    var initialPop = oldData[x].NumColonies;
+                    var finalPop = newData[x].NumColonies;
+                    var popLost = initialPop - finalPop;
+                    var decFlag = popLost >= 0 ? 1 : 0;
+                    if(initialPop == 0){
+                        var percLost = 0;
+                    }
+                    else{
+                        var percLost = finalPop / initialPop;
+                    }
+                    percLost = percLost - 1;
+                    if(decFlag == 1){
+                    	percLost = percLost * -1;
+                		console.log(percLost);
+
+                    }
+                    else{
+                    	popLost = popLost * -1;
+                    }
+                    var state = {fips: FIPS, state: stateName, numColonies: finalPop, flag: decFlag, percentLost: percLost, coloniesLost: popLost};
+                    temp.push(state);
+                }
+
+                return temp;
+            }
+
+            var annotationDiv = d3.select("#p1").append("div")
+                .attr("class", "annotate");
+
+            var lableDiv = d3.select("#p1").append("div")
+            	.attr("class", "label");
+
+           	lableDiv.append("text")
+        	.text("Bee population decrease over the past year in Colonies");
+
+        	var totalDiv = d3.select("#p1").append("div")
+        		.attr("class", "total");
+
+        	total(totalDiv);
+
+            annotationDiv.html("Bee colonies are decreasing at alarming rates in certain states! <br><br> Click your state to see how the <img class='rotateimgRight' src='images/honeyWand.svg' width='30' height='30' style='position:absolute; display:inline; margin-left: -70px; margin-top: 0'> declining bee population could affect you.");
+
+            d3.select("#p1").append("svg").attr("width", 900).attr("height", 700).attr("id", "beePopulation");
+
+            var svgMap = d3.select("#beePopulation");
+
+            percentScale();
+
+            var tooltip = d3.select("#p1").append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+
+
+            var projection = d3.geoAlbersUsa().scale(75);
+            var pathGenerator = d3.geoPath().projection(projection);
+
+            var opacityScale = d3.scaleLinear().domain([0, 0.3]).range(["#F6DD79", "#E99A35"]);
+
+            var counties, states;
+            var processedData;
+            var percentMap = true;
+
+            var produceData;
+            var recipeByIngredient;
+
+            d3.queue()
+            .defer(d3.json, "us.json")
+            .defer(d3.json, "data/fips.json")
+            .defer(d3.csv, "data/bee_state_data.csv")
+            .defer(d3.csv, "data/produce_by_state.csv", parseLine)
+            .defer(d3.csv, "data/new_bee_data.csv")
+            .defer(d3.json, "data/recipes.json")
+            .await(function (error, rawMap, fips, data, produce, newData, recipeRaw){
+                produceData = produce;
+                /*===========================================================================================================||
+                || All processed data will be in the varaible processed Data.                                                ||
+                || 																							                 ||
+                || Here is the example format: 																			     ||
+                || {state: "New Mexico", numColonies: "6000", flag: 1, percentLost: 0.1428571428571429, coloniesLost: 1000}  ||
+                ||																										     ||
+                || If flag is 1, then it means we actually lost colonies, if flag is 0, we gained colonies                   ||
+                || - all numbers are made positive for convenience                                                           ||
+                ||===========================================================================================================*/
+                processedData = processData(data,newData);
+                states = topojson.feature(rawMap, rawMap.objects.states);
+
+                /*=========== PARSE RECIPE DATA ====================
+                || Resulting form:
+                || Array of objects [{ "directions": [d1, d2,...], "ingredients": [i1, i2,...], "title": String },...]
+                ||=================================================*/
+                recipeRaw = recipeRaw.filter( function (d) {
+                    return d["rating"] >= 4;
+                })
+
+                console.log(recipeRaw);
+                recipeRaw = recipeRaw.map( function (d) {
+                    var result = {};
+                    Object.keys(d).forEach( (key) => {
+                        if (key == "directions" || key == "ingredients" || key == "title") {
+                          result[key] = d[key];
+                        }
+                    });
+                    return result;
+                });
+
+                recipeByIngredient = mapByIngredients(allIngredients, recipeRaw);
+
+                showMap();
+
+                var main = document.getElementById("main");
+
+                for(var x = 0; x < data.length; x++){
+                    if (data[x].State == "District of Columbia") continue;
+                    var div = document.createElement('div');
+                    div.setAttribute("id", "s" + data[x].FIPS);
+                    div.setAttribute("class", "state");
+                    main.appendChild(div);
+
+
+                    var name = document.createElement('h2');
+                    if(processedData[x].flag == 0 || processedData[x].percentLost == 1){
+                        var t = document.createTextNode(data[x].State + " - 0% Loss");
+                    }
+                    else{
+                        var t = document.createTextNode(data[x].State + " - " + Math.round(processedData[x].percentLost * 100).toString()+ "% Loss");
+                    }
+                    name.appendChild(t);
+                    div.appendChild(name);
+
+                    var incomeAnnotate = document.createElement('h3');
+                    incomeAnnotate.style = "position: relative; display: inline-block; width: 320px; font-size: 25px; margin-left:50px; top:27px"
+                    var ia = document.createTextNode("Potential Loss of annual income for pollinated crops");
+                    incomeAnnotate.appendChild(ia);
+                    div.appendChild(incomeAnnotate);
+
+                    drawState("s" + data[x].FIPS, fips[data[x].State], processedData[x].percentLost, processedData[x]);
+
+
+                    var divInner=document.createElement('div')
+                    div.appendChild(divInner);
+
+                    var numCol = document.createElement('h3');
+                    numCol.id = "nums" + data[x].FIPS;
+                    var contents = document.createTextNode("Expected Number of Colonies Left:");
+                    numCol.style = "padding-left: 170px; margin-top: 10px"
+                    numCol.appendChild(contents);
+                    divInner.appendChild(numCol);
+
+                    var text = document.createElement('h3');
+                    var content = document.createTextNode("2017");
+                    text.style="display: inline; padding-right: 10px"
+                    text.appendChild(content);
+                    divInner.appendChild(text);
+                    drawCrops("s" + data[x].FIPS, data[x].State);
+
+                    var label = document.createElement("label");
+                    label.for = "beeSlider" +  "s" + data[x].FIPS;
+                    label.style="display: inline; width: 240px;"
+                    var span = document.createElement("span");
+                    span.id="bee-value" +  "s" + data[x].FIPS;
+                    label.appendChild(span);
+                    var input = document.createElement("input");
+                    input.id = "beeSlider" +  "s" + data[x].FIPS;
+                    input.type = "range";
+                    input.value = 0;
+                    input.min = "0";
+                    input.max = "100";
+
+                    divInner.appendChild(input);
+                    divInner.appendChild(label);
+                    createRec("s" + data[x].FIPS, fips[data[x].State], processedData[x]);
+
+                    var text = document.createElement('h3');
+                    var content = document.createTextNode("2027");
+
+                    text.style="display: inline; padding-left: 20px"
+                    text.appendChild(content);
+                    divInner.appendChild(text);
+
+
+                    var textA = document.createElement('p');
+                    var contentA = document.createTextNode("Drag to see the projected bee population.");
+                    textA.id = "sliderHover"
+                    textA.style="float:left; width:140px; margin: 15px; font-size: 18px; padding: 5px; border: 1px dotted black; border-radius: 8px; opacity:1.0"
+                    textA.appendChild(contentA);
+                    divInner.appendChild(textA);
+                }
+
+                var defs = svgMap.append("defs");
+
+                var linearGradient = defs.append("linearGradient")
+                    .attr("id", "linear-gradient");
+
+
+                linearGradient
+                    .attr("x1", "0%")
+                    .attr("y1", "0%")
+                    .attr("x2", "0%")
+                    .attr("y2", "100%");
+
+                linearGradient.append("stop")
+                    .attr("offset", "0%")
+                    .attr("stop-color", "#F6DD79"); //light blue
+
+                linearGradient.append("stop")
+                    .attr("offset", "100%")
+                    .attr("stop-color", "#DC4601"); //dark blue
+
+                svgMap.append("rect")
+                    .attr("width", 20)
+                    .attr("height", 300)
+                    .attr("x", 885)
+                    .attr("y",350)
+                    .style("fill", "url(#linear-gradient)");
+            });
+
+            function showMap() {
+                // Create or modify paths for each country
+
+                d3.selectAll("country").remove();
+
+                projection.fitExtent([[0,0], [svgMap.attr("width"), svgMap.attr("height")]], states);
+                pathGenerator = d3.geoPath().projection(projection);
+
+                var paths = svgMap.selectAll("path.country").data(states.features);
+                paths.enter().append("path").attr("class", "country")
+                    .on("click", function (d) {
+                        var s = "s";
+                        s = s + d.id;
+                        document.getElementById(s).scrollIntoView();
+                    })
+
+                    .on("mouseover", function(d) {
+                        var position = d3.mouse(this);
+                        console.log(position);
+
+                        var bee = processedData[fipsToIndex(temp,d.id)];
+                        var name;
+                        var lost;
+                        if (bee) {
+                            name = bee.state;
+                            if(bee.flag == 1 && bee.percentLost != 1){
+                            	lost = Math.round(bee.percentLost * 100);
+                            }
+                            else{
+                            	lost = 0;
+                            }
+                            tooltip.transition()
+                                .duration(200)
+                                .style("opacity", .9);
+                            tooltip.html(name + " : " + lost + "%")
+                                .style("left", (position[0]) + 45 + "px")
+                                .style("top", (position[1]) + 45 + "px");
+                        }
+                    })
+
+                    .on("mouseout", function(d) {
+                        tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                    })
+
+                    .merge(paths)
+                    .style("fill", function(states) {
+                        var bee = processedData[fipsToIndex(temp,states.id)];
+                        if (bee) {
+                        	if(bee.flag == 0 || bee.percentLost == 1){
+                        		return opacityScale(0);
+                        	}
+                            return opacityScale(bee.percentLost);
+                        }
+                    })
+                    .attr("d", function (states) {
+                        return pathGenerator(states);
+                    })
+                    .style("stroke", "E99A35")
+                    .style("stroke-width", "0.5");
+            }
+
+
+            function showTotalLostMap() {
+                // Create or modify paths for each country
+
+                d3.selectAll("path.country").remove();
+
+                projection.fitExtent([[0,0], [svgMap.attr("width"), svgMap.attr("height")]], states);
+                pathGenerator = d3.geoPath().projection(projection);
+
+                var lossExtent = d3.extent(processedData, function (d) {
+                        return ((d.state) == "California") ? 0 : parseFloat(d.coloniesLost);
+                });
+
+                lossScale = d3.scaleLinear().domain([0,25000]).range(["#F6DD79", "#E99A35"]);
+
+                var paths = svgMap.selectAll("path.country").data(states.features);
+                paths.enter().append("path").attr("class", "country")
+                    .on("click", function (d) {
+                        var s = "s";
+                        s = s + d.id;
+                        document.getElementById(s).scrollIntoView();
+                    })
+
+                    .on("mouseover", function(d) {
+                        var position = d3.mouse(this);
+
+                        var bee = processedData[fipsToIndex(temp,d.id)];
+                        var name;
+                        var lost;
+                        if (bee) {
+                            name = bee.state;
+                            console.log(bee); /// GIANT FLAG
+                            lost = Math.round(bee.coloniesLost);
+                            tooltip.transition()
+                                .duration(200)
+                                .style("opacity", .9);
+                            tooltip.html(name + " : " + lost + " Colonies")
+                                .style("left", (position[0]) + "px")
+                                .style("top", (position[1]) + "px");
+                        }
+                    })
+
+                    .on("mouseout", function(d) {
+                        tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                    })
+
+                    .merge(paths)
+                    .style("fill", function(states) {
+                        if (states.id == 6) return "#E99A35";
+                        var bee = processedData[fipsToIndex(temp,states.id)];
+                        if (bee) {
+                            ;
+                            return lossScale(bee.coloniesLost);
+                        }
+                    })
+                    .attr("d", function (states) {
+                        return pathGenerator(states);
+                    })
+                    .style("stroke", "E99A35")
+                    .style("stroke-width", "0.5");
+            }
+
+            function changeMap() {
+
+                percentMap = !(percentMap);
+
+                if (percentMap){
+                    d3.selectAll("path.country").remove();
+                    d3.select("button").text("Map Total Colonies Lost");
+                    showMap();
+                    clean();
+                    percentScale();
+                }
+                else {
+                    d3.selectAll("path.country").remove();
+                    d3.select("button").text("Map Total Percent Lost");
+                    showTotalLostMap();
+                    clean();
+                    numScale();
+                }
+
+            }
+
+            function toTop() {
+                window.scrollTo(0, 0);
+
+            }
+
+            // reference: https://getflywheel.com/layout/add-sticky-back-top-button-website/
+            jQuery(document).ready(function() {
+
+                jQuery(window).scroll(function() {
+
+                    if (jQuery(this).scrollTop() > 750) {
+
+                    jQuery("#up-arrow").fadeIn(300);
+
+                    } else {
+
+                    jQuery("#up-arrow").fadeOut(300);
+
+                    }
+                });
+            });
+
+        </script>
+    </body>
+</html>

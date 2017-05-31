@@ -1,0 +1,125 @@
+body {
+font-family: 'Amatic SC', cursive, sans-serif;
+margin: 30px;
+background: white; 
+min-width: 1350;}
+
+h1 {
+    font-size: 100px;
+}
+
+h2 {
+    font-size: 50px;
+    position: relative;
+    z-index: 1;
+    display: inline-block;  
+}
+
+p {
+    font-size: 20px;
+}
+
+div .state {
+    margin: 40px;
+    padding: 30px;
+    border-style: dotted;
+    border-color: #fee140;
+    position: relative;
+}
+
+.inner-div { 
+    border-left: thin dashed #E99A35;
+    height: 55%;
+    width: 43%;
+    position: relative; 
+    float: right;
+    top:0%;
+    z-index: 100000;
+    overflow-y:auto;
+}
+
+.rotateimg {
+  -webkit-transform:rotate(50deg);
+  -moz-transform: rotate(50deg);
+  -ms-transform: rotate(50deg);
+  -o-transform: rotate(50deg);
+  transform: rotate(50deg);
+}
+
+.rotateimgRight {
+  -webkit-transform:rotate(110deg);
+  -moz-transform: rotate(110deg);
+  -ms-transform: rotate(110deg);
+  -o-transform: rotate(110deg);
+  transform: rotate(110deg);
+}
+
+.mapButton {
+    position: absolute;
+    top: 750px;
+    right: 41%;
+    width:18%;
+}
+
+#up-arrow {
+    height: 85px;
+    width: 85px;
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    display: none;
+}
+
+.tooltip {
+    position: absolute;
+    text-align: center;
+    display: inline-block;
+    width: 130px;
+    padding: 2px;
+    font-size: 20px;
+    font-family: 'Amatic SC', cursive, sans-serif;
+    background: lightsteelblue;
+    border: 0px;
+    border-radius: 8px;
+    pointer-events: none;
+}
+
+.annotate {
+  position:absolute;
+  width: 200px;
+  height: 50px;
+  padding: 2px;
+  margin-left: -20px;
+  font-size: 25px;
+  font-family: 'Amatic SC', cursive, sans-serif;
+  background: "#e2ebf0";
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.label{
+  position:absolute;
+  text-align: center;
+  width: 230px;
+  height: 50px;
+  padding: 2px;
+  margin-top: 21%;
+  margin-left: 75%;
+  font-size: 30px;
+  font-family: 'Amatic SC', cursive, sans-serif;
+}
+
+.total{
+  position:absolute;
+  text-align: center;
+  width: 275px;
+  height: 50px;
+  padding: 2px;
+  margin-top: 8%;
+  margin-left: 73%;
+  font-size: 30px;
+  font-family: 'Amatic SC', cursive, sans-serif;
+}
+
+.title { font-weight: bold; }
+
